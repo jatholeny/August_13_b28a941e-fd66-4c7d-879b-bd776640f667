@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script src="/angular/angular.js"></script>
+    <style>
+      .enabled {
+        background-color:rgba(126, 255, 231, 0.55);
+      }
+      input {
+        line-height: 50px;
+        font-size: large;
+        margin:10px;
+      }
+      button {
+        line-height:50px;
+        font-size:large;
+        margin:10px;
+      }
+    </style>
+
+  </head>
+  <body>
+    <div ng-controller="myController">
+      <h1><%= title %></h1>
+      <section>
+        <form>
+          <fieldset>
+            <legend>Create a newcontact here</legend>
+            name<input type="test" ng-model="newcontact.name">
+            email<input type="email" ng-model="newcontact.email">
+            phone<input type="tel" ng-model="newcontact.tel">
+            <button ng-click="createnewcontact()">submit</button>
+          </fieldset>
+        </form>
+      </section>
+
+      <form>
+        <fieldset>
+          <legend>Search the contact</legend>
+          name<input type='text' ng-model="searchby.name">
+          email<input type='email' ng-model="searchby.email">
+          phone<input type='tel' ng-model="searchby.tel">
+          <button ng-click="makesearch(searchby)">search</button>
+        </fieldset>
+      </form>
+
+
+
+      <ul>
+        <li ng-repeat="eachresult in searchresult | filter:{name:searchby.name, email:searchby.email , tel:searchby.tel}">
+          <input type="text" ng-model="eachresult.name" ng-class="{enabled: eachresult.enabled}" ng-disabled="!eachresult.enabled">
+          <input type="eamil" ng-model="eachresult.email" ng-class="{enabled: eachresult.enabled}" ng-disabled="!eachresult.enabled">
+          <input type="tel" ng-model="eachresult.tel" ng-class="{enabled: eachresult.enabled}" ng-disabled="!eachresult.enabled">
+          <button ng-click="update(eachresult)" >Update</button>
+          <button ng-click="delete(eachresult)" >Delete</button>
+        </li>
+      </ul>
+    </div>
+  </body>
+<script>
+  angular.module('myApp', []).controller('myController',function(Contactservice, $scope){
+
+     $scope.newcontact={};
+     $scope.createnewcontact=function(){
+       Contactservice.create($scope.newcontact).success(function(data){
+         console.log("create successfully! here is your contact you just create")
+         $scope.newcontact={};
+
+       });
+     };
+
+     $scope.searchby={};
+     $scope.makesearch=function(){
+       var arr = [];
+       for(var prop in $scope.searchby){
+         var prop = encodeURIComponent(prop);
+         var value = encodeURIComponent($scope.searchby[prop]);
+         arr.push(prop +"="+ value);
+       };
+       arr = arr.join('&');
+       console.log(arr);
+       Contactservice.search(arr).success(function(data){
+         console.log("Search successfully!",data);
+         $scope.searchresult=data;
+         $scope.searchby={};
+       });
+     };
+
+     $scope.update=function(contactwanttoupdate){
+       Contactservice.update(contactwanttoupdate).success(function(data){
+         contactwanttoupdate.enabled = contactwanttoupdate.enabled ? false : true;
+         console.log("Update successfully!" , data);
+       });
+     };
+     $scope.delete=function(contactwanttodelete){
+       Contactservice.delete(contactwanttodelete).success(function(data){
+         console.log("Delete successfully!" , data);
+         $scope.makesearch();
+       });
+     };
+
+
+
+   }).factory('Contactservice',function($http){
+
+    $http.defaults.headers.common = { 'Accept' : 'application/json' } ;
+    return {
+       create:function(obj){
+         return $http.post('/contact', obj);
+       },
+       search: function (query) {
+         return $http.get('/contact?' +query );
+       },
+       update:function(obj){
+         return $http.put('/contact/'+ obj._id , obj);
+       },
+       delete:function(obj){
+         return $http.delete('/contact/' + obj._id);
+       }
+     }
+
+   })
+</script>
+</html>
